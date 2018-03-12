@@ -4,20 +4,25 @@ const CREDS = require('./creds');
 // var TYPES = require('tedious').TYPES;  
 // var Connection = require('tedious').Connection;  
 
-
+const colNames = {
+    5: 'PurchaseDate',
+    6: 'Description',
+    7: 'FullName',
+    8: 'OwnerStatus',
+    9: 'Address',
+    10:'City',
+    11:'State',
+    12:'Zip',
+    13:'Phone'
+};
 
 async function LogIn(){
-    const aVin = '1C3CCCFB8GN194471'; //'2C4RC1GG3JR100527'; //2A8HR54199R612914
+    const Vins = ['1C3CCCFB8GN194471','2C4RC1GG3JR100527','2A8HR54199R612914'];
     const browser = await puppeteer.launch({
         headless: false
     });
     const page = await browser.newPage();
-    await getACar(page,aVin);
-    browser.close();
-}
-
-async function getACar(page,aVin) {
-
+    let carData = [];
 
     // Log In
     const USERNAME_SELECTOR = '#FormsEditField1';
@@ -31,13 +36,24 @@ async function getACar(page,aVin) {
     await page.keyboard.type(CREDS.webpassword);
     await page.click(BUTTON_SELECTOR);
     await page.waitForNavigation();
-    
+    await page.goto('https://w02.dealerconnect.chrysler.com/sales/timeofsale/COIN/CustomerInformation.jsp?command=customerOwnerInformationInquiry&operation=openCustomerOwnerInformationInquiry&routeFrom=Portlet');
+
+    for (let vin of Vins) {
+        carData.push( await getACar(page,vin) );
+    }
+    browser.close();
+    console.log('carData:',carData);
+}
+
+async function getACar(page,Vin) {
+
+    console.log('Vin:',Vin);
+    aCarData = {"Vin":Vin};
     // Choose Vin
     const VIN_SELECTOR = '#VINLastEight';
     const VIN_BUTTON_SELECTOR = '#searchBody > a';
-    await page.goto('https://w02.dealerconnect.chrysler.com/sales/timeofsale/COIN/CustomerInformation.jsp?command=customerOwnerInformationInquiry&operation=openCustomerOwnerInformationInquiry&routeFrom=Portlet');
     await page.click(VIN_SELECTOR);
-    await page.keyboard.type(aVin);
+    await page.keyboard.type(Vin);
     await page.click(VIN_BUTTON_SELECTOR);
 
     //Choose Date
@@ -45,7 +61,7 @@ async function getACar(page,aVin) {
     await page.waitForSelector(TABLE_ROW);
     let numTableRows = await page.evaluate((sel) => {
         return document.querySelectorAll(sel).length;
-      }, TABLE_ROW);
+    }, TABLE_ROW);
 
     //radio boxes (tr:nth-child(INDEX) should start at 3)
     const DATE_RADIO_SELECTOR = '#searchCriteria > tbody > tr > td > table.dcTable > tbody > tr:nth-child(INDEX) > td:nth-child(1) > input[type="radio"]:nth-child(8)';
@@ -71,7 +87,10 @@ async function getACar(page,aVin) {
                 let element = document.querySelector(sel);
                 return element? element.innerHTML: null;
             }, TABLE_FIELDS.replace("ROWINDEX", i).replace("COLINDEX", j));
-            j!==8?console.log('Column'+j+':',ColVal.replace(/\n/g,'')):console.log('Column'+j+':',ColVal.replace('<br>','').replace(/\s/g,''));
+            j!==8?ColVal=ColVal.replace(/\t|\n/g,''):ColVal=ColVal.replace('<br>','').replace(/\s/g,'');
+            let colName = colNames[j];
+            console.log(colName,ColVal);
+            aCarData[colName] = ColVal;
         }
 
         let RadioSelector = DATE_RADIO_SELECTOR.replace("INDEX", i);
@@ -86,32 +105,31 @@ async function getACar(page,aVin) {
         let emailAddr = await page.evaluate(() => {
             let element = document.getElementsByName('eMail');
             return element? element[0].value: null;
-          });
+        });
         console.log('emailAddr:',emailAddr);
+        aCarData['emailAddr'] = emailAddr;
 
         let Title = await page.evaluate((sel) => {
             let element = document.querySelector(sel);
             return element? element.options[element.selectedIndex].text: null;
-          },TITLE_FIELD_DROPDOWN); //dropdown
+        },TITLE_FIELD_DROPDOWN); //dropdown
         if(Title===null){
             Title = await page.evaluate((sel) => {
                 let element = document.querySelector(sel);
                 return element? element.innerHTML: null;
             },TITLE_FIELD_TEXT); //just text
         }
-            console.log('Title:',Title);
+        console.log('Title:',Title);
+        aCarData['Title'] = Title;
 
-        //await page.waitFor(500);
         await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:30003}); //go back to list
-        //await page.waitFor(500);
         await page.click(BACK_TO_LIST_TAB_SELECTOR);    
         await page.waitForSelector(TABLE_ROW);
-
     }
-
-
-
-    // browser.close();
+    await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:30007}); //go back to select vin
+    await page.click(BACK_TO_CRITERIA_TAB_SELECTOR);    
+    await page.waitForSelector(VIN_BUTTON_SELECTOR);
+    return aCarData;
 }
 
 LogIn();
