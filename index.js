@@ -1,8 +1,7 @@
 const puppeteer = require('puppeteer');
 const CREDS = require('./creds');
-// var Request = require('tedious').Request;  
-// var TYPES = require('tedious').TYPES;  
-// var Connection = require('tedious').Connection;  
+const GetVins = require('./GetVins');
+const StoreResults = require('./StoreResults');
 
 const colNames = {
     5: 'PurchaseDate',
@@ -17,7 +16,10 @@ const colNames = {
 };
 
 async function LogIn(){
-    const Vins = ['1C3CCCFB8GN194471','2C4RC1GG3JR100527','2A8HR54199R612914'];
+    const VinObj = await GetVins();
+    const Vins = VinObj.recordset.map(obj=>obj.VIN);
+     console.log(JSON.stringify(Vins, null, 4)); 
+    
     const browser = await puppeteer.launch({
         headless: false
     });
@@ -42,23 +44,31 @@ async function LogIn(){
         carData.push( await getACar(page,vin) );
     }
     browser.close();
-    console.log('carData:',carData);
+    StoreResults(carData);
+    console.log(JSON.stringify(carData, null, 4));
 }
 
 async function getACar(page,Vin) {
 
-    console.log('Vin:',Vin);
-    aCarData = {"Vin":Vin};
+    //console.log('Vin:',Vin);
+    let aCarData = {"Vin":Vin,"Rows":[]}; 
     // Choose Vin
     const VIN_SELECTOR = '#VINLastEight';
     const VIN_BUTTON_SELECTOR = '#searchBody > a';
     await page.click(VIN_SELECTOR);
+
+    //clear Vin field
+    await page.keyboard.down('ControlLeft');
+    await page.keyboard.type('a');
+    await page.keyboard.up('ControlLeft');
+    await page.keyboard.press('Backspace');
+
     await page.keyboard.type(Vin);
     await page.click(VIN_BUTTON_SELECTOR);
 
     //Choose Date
     const TABLE_ROW = '#searchCriteria > tbody > tr > td > table.dcTable > tbody > tr';
-    await page.waitForSelector(TABLE_ROW);
+    await page.waitForSelector(TABLE_ROW,{timeout:30011});
     let numTableRows = await page.evaluate((sel) => {
         return document.querySelectorAll(sel).length;
     }, TABLE_ROW);
@@ -82,15 +92,23 @@ async function getACar(page,Vin) {
 
     for (let i = 3; i <= numTableRows; i++) { 
         // TABLE VALUES
-        for(let j = 5; j <= 13; j++){
+        let tableRow = {"Row":i-2};
+        for(let j = 5; j <= 13; j++){ //columns in table that we care about
             let ColVal = await page.evaluate((sel) => {
                 let element = document.querySelector(sel);
                 return element? element.innerHTML: null;
             }, TABLE_FIELDS.replace("ROWINDEX", i).replace("COLINDEX", j));
-            j!==8?ColVal=ColVal.replace(/\t|\n/g,''):ColVal=ColVal.replace('<br>','').replace(/\s/g,'');
+
+            ColVal=ColVal.replace(/\t|\n/g,'');
+            j===8   //OwnerStatus
+            ? ColVal=ColVal.replace('<br>','').replace(/\s/g,'')
+            : j===13 //PhoneNumber
+            ? ColVal=ColVal.replace('&nbsp;<img src="images/check.gif" width="10" height="10">'," Verified")
+                           .replace('<strike>','').replace('</strike>'," Do Not Call") 
+            : ColVal=ColVal;
             let colName = colNames[j];
-            console.log(colName,ColVal);
-            aCarData[colName] = ColVal;
+            //console.log(colName,ColVal);
+            tableRow[colName] = ColVal;
         }
 
         let RadioSelector = DATE_RADIO_SELECTOR.replace("INDEX", i);
@@ -106,8 +124,8 @@ async function getACar(page,Vin) {
             let element = document.getElementsByName('eMail');
             return element? element[0].value: null;
         });
-        console.log('emailAddr:',emailAddr);
-        aCarData['emailAddr'] = emailAddr;
+        //console.log('emailAddr:',emailAddr);
+        tableRow['EmailAddr'] = emailAddr;
 
         let Title = await page.evaluate((sel) => {
             let element = document.querySelector(sel);
@@ -119,16 +137,19 @@ async function getACar(page,Vin) {
                 return element? element.innerHTML: null;
             },TITLE_FIELD_TEXT); //just text
         }
-        console.log('Title:',Title);
-        aCarData['Title'] = Title;
+        //console.log('Title:',Title);
+        tableRow['Title'] = Title;
 
         await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:30003}); //go back to list
         await page.click(BACK_TO_LIST_TAB_SELECTOR);    
         await page.waitForSelector(TABLE_ROW);
+
+        aCarData.Rows.push(tableRow);
     }
     await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:30007}); //go back to select vin
     await page.click(BACK_TO_CRITERIA_TAB_SELECTOR);    
     await page.waitForSelector(VIN_BUTTON_SELECTOR);
+    //console.log("aCarData",JSON.stringify(aCarData, null, 4));
     return aCarData;
 }
 
@@ -142,3 +163,10 @@ process.on('unhandledRejection', (err) => {
 
 // let filepath = 'screenshots/dc' + i + '.png';
 // await page.screenshot({ path: filepath });
+
+// Syntax for async error handling
+// try {
+//     await myFunc(param);  
+// } catch(e) {
+//     return cb('Error msg');
+// }
