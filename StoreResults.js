@@ -8,46 +8,6 @@ const config = {
     database: CREDS.dbdatabase,  
 }; 
 
-RunIt();
-async function RunIt(){
-    const resultObj = [{
-        "Vin": "2C4RC1GG3JR100527",
-        "Rows": [
-            {
-                "Row": 1,
-                "PurchaseDate": "2018-1-1",
-                "Description": "CHRYSLER PACIFICA        ",
-                "FullName": "HENDERSONVILLE, HENDERSONV",
-                "OwnerStatus": "ServiceCustomer",
-                "Address": "401 DUNCAN HILL RD                                          ",
-                "City": "HENDERSONVILLE                  ",
-                "State": "NC",
-                "Zip": "287922718013",
-                "Phone": "(828) 692-8777 Do Not Call",
-                "EmailAddr": "hennesyville@msn.com",
-                "Title": "1 - Mr."
-            },
-            {
-                "Row": 2,
-                "PurchaseDate": "02/02/2018",
-                "Description": "CHRYSLER PACIFICAZ       ",
-                "FullName": "HENDERSONVILLE, HENDERSONV",
-                "OwnerStatus": "ServiceCustomer",
-                "Address": "401 DUNCAN HILL RD                                          ",
-                "City": "HENDERSONVILLE                  ",
-                "State": "NC",
-                "Zip": "287922718013",
-                "Phone": "(828) 692-8777 Do Not Call",
-                "EmailAddr": "hennesyville@msn.com",
-                "Title": "1 - Mr."
-            }            
-        ]
-    }];
-
-    let res = await StoreResults(resultObj);
-    console.log(JSON.stringify(res, null, 4)); 
-}
-
 async function StoreResults(resultObj) { 
     sql.close();
     try {
@@ -88,3 +48,44 @@ sql.on('error', err => {
 })
 
 module.exports = StoreResults;
+
+///////////////////////////////////////////////////////
+TestRun();
+async function TestRun(){
+    const resultObj = [{
+        "Vin": "2C4RC1GG3JR100527",
+        "Rows": [
+            {
+                "Row": 1,
+                "PurchaseDate": "2018-1-1",
+                "Description": "CHRYSLER PACIFICA        ",
+                "FullName": "HENDERSONVILLE, HENDERSONV",
+                "OwnerStatus": "ServiceCustomer",
+                "Address": "401 DUNCAN HILL RD                                          ",
+                "City": "HENDERSONVILLE                  ",
+                "State": "NC",
+                "Zip": "287922718013",
+                "Phone": "(828) 692-8777 Do Not Call",
+                "EmailAddr": "hennesyville@msn.com",
+                "Title": "1 - Mr."
+            },
+            {
+                "Row": 2,
+                "PurchaseDate": "02/02/2018",
+                "Description": "CHRYSLER PACIFICAZ       ",
+                "FullName": "HENDERSONVILLE, HENDERSONV",
+                "OwnerStatus": "ServiceCustomer",
+                "Address": "401 DUNCAN HILL RD                                          ",
+                "City": "HENDERSONVILLE                  ",
+                "State": "NC",
+                "Zip": "287922718013",
+                "Phone": "(828) 692-8777 Do Not Call",
+                "EmailAddr": "hennesyville@msn.com",
+                "Title": "1 - Mr."
+            }            
+        ]
+    }];
+
+    let res = await StoreResults(resultObj);
+    console.log(JSON.stringify(res, null, 4)); 
+}

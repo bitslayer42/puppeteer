@@ -8,11 +8,6 @@ const config = {
     database: CREDS.dbdatabase,  
 }; 
 
-RunIt();
-async function RunIt(){
-    let res = await GetVins();
-    console.log(JSON.stringify(res, null, 4)); 
-}
 
 async function GetVins() { 
     sql.close();
@@ -34,3 +29,9 @@ sql.on('error', err => {
 })
 
 module.exports = GetVins;
+/////////////////////////////////////////////////////
+TestRun();
+async function TestRun(){
+    let res = await GetVins();
+    console.log(JSON.stringify(res, null, 4)); 
+}
