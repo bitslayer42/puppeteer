@@ -11,7 +11,7 @@ const config = {
 
 async function GetVins() { 
     sql.close();
-    request = "select VIN from deals where make = 'CHRYSLER' AND NEW_USED_CERTUSED = 'New' ORDER BY DATE desc;"; 
+    request = "select top 22 VIN from deals where make = 'CHRYSLER' AND NEW_USED_CERTUSED = 'New' ORDER BY DATE desc;"; 
     try {
         let pool = await sql.connect(config)
         let result1 = await pool.request()
