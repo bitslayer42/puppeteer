@@ -16,7 +16,6 @@ const colNames = {
     12:'Zip',
     13:'Phone'
 };
-let carData = [];   //array of aCarData = {"Vin":Vin, "NoContract":null, "Message":null}; 
 let emailData = []; //array of anEmailData = {"Vin":Vin,"Rows":[]};
 let browser;
 

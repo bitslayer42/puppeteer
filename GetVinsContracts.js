@@ -9,15 +9,15 @@ const config = {
 }; 
 
 
-async function GetVins() { 
+async function GetVinsContracts() { 
     sql.close();
-    request = "select VIN from deals where make = 'CHRYSLER' AND NEW_USED_CERTUSED = 'New' ORDER BY DATE ;"; 
+    request = "select VIN from DealerConnect_VinList where Vin NOT IN (select Vin from DealerConnectContracts)  order by vin ;"  
     try {
         let pool = await sql.connect(config)
         let result1 = await pool.request()
             .query(request)
-        sql.close();            
-        pool.close();    
+        await sql.close();            
+        await pool.close();    
         return result1;
     } catch (err) {
         console.log(err);
@@ -28,10 +28,10 @@ sql.on('error', err => {
     console.log(err);
 })
 
-module.exports = GetVins;
+module.exports = GetVinsContracts;
 /////////////////////////////////////////////////////
 TestRun();
 async function TestRun(){
-    let res = await GetVins();
+    let res = await GetVinsContracts();
     console.log(JSON.stringify(res, null, 4)); 
 }

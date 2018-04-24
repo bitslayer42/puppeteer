@@ -1,10 +1,8 @@
-//2ND PART: Get Emails
 const puppeteer = require('puppeteer');
 const CREDS = require('./creds');
-const GetVinsEmails = require('./GetVinsEmails');
+const GetVinsContracts = require('./GetVinsContracts');
+const StoreResultsContracts = require('./StoreResultsContracts'); //has contract info
 const StoreResultsEmails = require('./StoreResultsEmails');    //emails
-// const StoreResultsFile = require('./StoreResultsFile'); //emails
-
 const colNames = {
     5: 'PurchaseDate',
     6: 'Description',
@@ -16,26 +14,24 @@ const colNames = {
     12:'Zip',
     13:'Phone'
 };
-let carData = [];   //array of aCarData = {"Vin":Vin, "NoContract":null, "Message":null}; 
-let emailData = []; //array of anEmailData = {"Vin":Vin,"Rows":[]};
-let browser;
 
-async function Run(){  //(called at bottom of file to start program)
-    await StoreResultsEmails(null, true); //delete
-    await LogIn();
-}
+let contractData = [];   //array of aCarData = {"Vin":Vin, "NoContract":null, "Message":null}; 
+let emailData = []; //array of anEmailData = {"Vin":Vin,"Rows":[]};  1C4PJMLX2JD526667
 
-async function LogIn(){ 
-    const VinObj = await GetVinsEmails();
+async function LogIn(){  //(called at bottom of file to start program)
+    const VinObj = await GetVinsContracts();
+
     const Vins = VinObj.recordset.map(obj=>obj.VIN);
-    // console.log(JSON.stringify(Vins, null, 4)); 
-    if(Vins.length===0){return};
-
-    browser = await puppeteer.launch({
+    console.log(JSON.stringify(Vins, null, 4)); 
+    
+    //const Vins = ['3C6UR5CL3JG206752','1C3CCCABOGN147460'];
+    const browser = await puppeteer.launch({
         headless: false
     });
     const page = await browser.newPage();
     await page.setViewport({width:1000,height:1000});
+
+
     // Log In
     const USERNAME_SELECTOR = '#FormsEditField1';
     const PASSWORD_SELECTOR = '#FormsEditField2';
@@ -48,30 +44,101 @@ async function LogIn(){
     await page.keyboard.type(CREDS.webpassword);
     await page.click(BUTTON_SELECTOR);
     await page.waitForNavigation({timeout:30002});
+    
+    // checkIfNoContract   
+    for(let ix=0;ix<Vins.length;ix++){    
+        contractData.push( await checkIfNoContract(page,Vins[ix],ix) );
+        //await checkIfNoContract(page,Vins[ix],ix);
+    };
+    await StoreResultsContracts(contractData); // data if has contract
+    // //filter only no contract
+    // let noContractCarData = carData.filter(car=>car.NoContract===true)
+    // // get email
+    // await page.goto('https://w02.dealerconnect.chrysler.com/sales/timeofsale/COIN/CustomerInformation.jsp?command=customerOwnerInformationInquiry&operation=openCustomerOwnerInformationInquiry&routeFrom=Portlet');
+    // for (let aNoContractCar of noContractCarData) {
+    //     emailData.push( await getEmail(page,aNoContractCar.Vin) );
+    // }
 
-    // get email
-    await page.goto('https://w02.dealerconnect.chrysler.com/sales/timeofsale/COIN/CustomerInformation.jsp?command=customerOwnerInformationInquiry&operation=openCustomerOwnerInformationInquiry&routeFrom=Portlet');
-        
-    for (let vin of Vins) {
-        let anEmailData = await getEmail(page,vin);
-        emailData.push( anEmailData );
-    }
-    await StoreResultsEmails(emailData,false); // customer data 
+    // StoreResults(emailData); // customer data 
 
     browser.close();
 
     console.log(JSON.stringify(emailData, null, 4));
 }
 
+async function checkIfNoContract(page,Vin,ix) { 
+    let aCarData = {"Vin":Vin, "NoContract":null, "Message":''};  
+    const VIN_SELECTOR = '#vin';
+    const SUBMIT_BUTTON_SELECTOR = '#SearchBody > a';
+    const ERROR_MSG_SELECTOR = '#msg > span:nth-child(3)';   //error message: "No records matched the given search criteria" 
+    const CONTRACT_SELECTOR = 'body > form > table:nth-child(7) > tbody > tr > td > table > tbody > tr:nth-child(ROWNUM) > td:nth-child(3) > a';
+                               
+    const CONTRACT_RADIO_SELECTOR = '#admRadio';
+
+    await page.goto("https://w05.dealerconnect.chrysler.com/sales/cscweb/cscsales/dealersales/adminSearch.do?operation=init");
+    
+    await page.waitForSelector(VIN_SELECTOR,{timeout:30003});
+    await page.click(VIN_SELECTOR);  
+    await page.keyboard.type(Vin);
+    await page.click(SUBMIT_BUTTON_SELECTOR);    
+    try {
+        await page.waitForSelector(CONTRACT_RADIO_SELECTOR,{timeout:1000}); 
+    }
+    catch(err) {
+        //check for "not found" 
+        let ErrMsg = await page.evaluate((sel) => {
+            let element = document.querySelector(sel);
+            return element? element.innerHTML: null;
+        },ERROR_MSG_SELECTOR); //dropdown             
+        if(ErrMsg){
+            console.log(Vin,ErrMsg);
+            aCarData.Message = ErrMsg; // "No records matched the given search criteria"
+            aCarData.NoContract = true;
+        }else{   //timeout on CONTRACT_RADIO_SELECTOR is too short?
+            console.log(Vin,'WhyYouNoErrMsg?');
+            aCarData.NoContract = null;
+            aCarData.Message = 'WhyYouNoErrMsg?';
+        }
+        return aCarData;
+    };
+   //document.querySelector('body > form > table:nth-child(7) > tbody > tr > td > table > tbody > tr:nth-child(3) > td:nth-child(3) > a')
+    //Contract List Table appears:
+    //await page.waitForSelector(CONTRACT_RADIO_SELECTOR,{timeout:1000});
+    let numTableRows = await page.evaluate((sel) => {
+        return document.querySelectorAll(sel).length;
+    }, CONTRACT_RADIO_SELECTOR);
+
+    let HasContract = false;
+    for (let i = 3; i < (numTableRows+3); i++) {
+        let CONTRACT_SELECTOR_I = CONTRACT_SELECTOR.replace("ROWNUM", i);
+        await page.waitForSelector(CONTRACT_SELECTOR_I,{timeout:30004});
+        let ContractNumber = await page.evaluate((sel) => { 
+            return document.querySelector(sel).onmouseover.toString().split("'")[1].substring(23).split('\\n');
+        }, CONTRACT_SELECTOR_I);
+
+        for(let i=0;i<ContractNumber.length;i++){
+            if(ContractNumber[i].search(/L|W/)===0){
+                await console.log(Vin,"Has Warranty: ",ContractNumber[i]);
+                HasContract = true;
+            }else{
+                await console.log(Vin,"Not a Warranty: ",ContractNumber[i]);
+            }
+        }
+        
+        aCarData.Message = ContractNumber.join(' - ');
+        aCarData.NoContract = !HasContract;
+    }
+    return aCarData;
+
+}
+
 async function getEmail(page,Vin) {
 
-    console.log('Vin:',Vin);
+    //console.log('Vin:',Vin);
     let anEmailData = {"Vin":Vin,"Rows":[]}; 
     // Choose Vin
     const VIN_SELECTOR = '#VINLastEight';
     const VIN_BUTTON_SELECTOR = '#searchBody > a';
-    const ERROR_MSG_SELECTOR = '#searchCriteria > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td';
-    await page.waitForSelector(VIN_SELECTOR,{timeout:30012});
     await page.click(VIN_SELECTOR);
 
     //clear Vin field
@@ -85,23 +152,7 @@ async function getEmail(page,Vin) {
 
     //Choose Date
     const TABLE_ROW = '#searchCriteria > tbody > tr > td > table.dcTable > tbody > tr';
-    try {
-        await page.waitForSelector(TABLE_ROW,{timeout:3001});
-    }
-    catch(err) {
-        //check for "not found" 
-        let ErrMsg = await page.evaluate((sel) => {
-            let element = document.querySelector(sel);
-            return element? element.innerHTML: null;
-        },ERROR_MSG_SELECTOR); //dropdown             
-        if(ErrMsg){
-            console.log(Vin,ErrMsg);// "This VIN is not in COIN. Please use the Report Used Sale tab to enter customer information."
-        }else{   //timeout on TABLE_ROW is too short?
-            console.log(Vin,'WhyYouNoErrMsg?');
-        }
-        return anEmailData;
-    };
-
+    await page.waitForSelector(TABLE_ROW,{timeout:30013});
     let numTableRows = await page.evaluate((sel) => {
         return document.querySelectorAll(sel).length;
     }, TABLE_ROW);
@@ -146,16 +197,15 @@ async function getEmail(page,Vin) {
 
         let RadioSelector = DATE_RADIO_SELECTOR.replace("INDEX", i);
         await page.click(RadioSelector);
-        await page.waitForSelector(ACTIVE_ADDRESS_TAB_SELECTOR,{timeout:30025}); //go to address page
+        await page.waitForSelector(ACTIVE_ADDRESS_TAB_SELECTOR,{timeout:30014}); //go to address page
         await page.click(ACTIVE_ADDRESS_TAB_SELECTOR);    
         
-        await page.waitForSelector(OPT_IN_FLAG,{timeout:30005}); 
-        //await page.waitForNavigation({timeout:30001});
-        // await page.waitFor(1000); ////////////////////////////////////////////////////////////////////
+        await page.waitForSelector(OPT_IN_FLAG,{timeout:30015}); 
+        //await page.waitFor(1000);
 
         let emailAddr = await page.evaluate(() => {
             let element = document.getElementsByName('eMail');
-            return element && element[0] && element[0].value ? element[0].value: null;
+            return element? element[0].value: null;
         });
         //console.log('emailAddr:',emailAddr);
         tableRow['EmailAddr'] = emailAddr;
@@ -173,30 +223,25 @@ async function getEmail(page,Vin) {
         //console.log('Title:',Title);
         tableRow['Title'] = Title;
 
-        await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:30003}); //go back to list
+        await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:30017}); //go back to list
         await page.click(BACK_TO_LIST_TAB_SELECTOR);    
-        await page.waitForSelector(TABLE_ROW,{timeout:40035});
+        await page.waitForSelector(TABLE_ROW,{timeout:30018});
 
         anEmailData.Rows.push(tableRow);
     }
-    await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:30007}); //go back to select vin
+    await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:30019}); //go back to select vin
     await page.click(BACK_TO_CRITERIA_TAB_SELECTOR);    
-    await page.waitForSelector(VIN_BUTTON_SELECTOR,{timeout:30045});
+    await page.waitForSelector(VIN_BUTTON_SELECTOR,{timeout:30021});
     //console.log("anEmailData",JSON.stringify(anEmailData, null, 4));
     return anEmailData;
 }
 
-//////////PROGRAM STARTS HERE//////////////////
-Run();
-//////////PROGRAM STARTS HERE//////////////////
+LogIn();
 
 //if any awaits time out, program ends
-process.on('unhandledRejection', async (err) => { 
-    console.error(err);
-    await StoreResultsEmails(emailData,false);
-    emailData = []; 
-    await browser.close();
-    await LogIn();
+process.on('unhandledRejection', (err) => { 
+    console.error(err)
+    process.exit(1)
   })
 
 // let filepath = 'screenshots/dc' + i + '.png';

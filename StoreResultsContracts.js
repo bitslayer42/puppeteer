@@ -8,33 +8,21 @@ const config = {
     database: CREDS.dbdatabase,  
 }; 
 
-async function StoreResults(resultObj) { 
+async function StoreResultsContracts(resultObj) { 
     sql.close();
     try {
         let pool = await sql.connect(config);
-        await pool.request().query("DELETE DealerConnect;")
-        for(let i = 0;i<resultObj.length;i++){
-            for(let j = 0;j<resultObj[i].Rows.length;j++){
-                let vin = resultObj[i].Vin;
-                let row = resultObj[i].Rows[j];
-                await pool.request()
-                .input('Vin', sql.VarChar(17), vin)
-                .input('Row', sql.Int, row.Row)
-                .input("PurchaseDate", sql.VarChar(20), row.PurchaseDate)
-                .input("Description", sql.VarChar(200), row.Description)
-                .input("FullName", sql.VarChar(200), row.FullName)
-                .input("OwnerStatus", sql.VarChar(200), row.OwnerStatus)
-                .input("Address", sql.VarChar(200), row.Address)
-                .input("City", sql.VarChar(200), row.City)
-                .input("State", sql.VarChar(200), row.State)
-                .input("Zip", sql.VarChar(200), row.Zip)
-                .input("Phone", sql.VarChar(200), row.Phone)
-                .input("EmailAddr", sql.VarChar(200), row.EmailAddr)
-                .input("Title", sql.VarChar(200), row.Title)          
-                .execute('UploadDealerConnect');  
-            }
-        }
 
+        await pool.request().query("DELETE DealerConnectContracts;")
+
+        for(let i = 0;i<resultObj.length;i++){
+                await pool.request()
+                .input('Vin', sql.VarChar(17), resultObj[i].Vin)
+                .input("NoContract", sql.VarChar(20), resultObj[i].NoContract)
+                .input("Message", sql.VarChar(200), resultObj[i].Message)          
+                .execute('UploadDealerConnectContracts');  
+
+        }
 
         sql.close();
         pool.close();
@@ -47,7 +35,7 @@ sql.on('error', err => {
     console.log(err);
 })
 
-module.exports = StoreResults;
+module.exports = StoreResultsContracts;
 
 ///////////////////////////////////////////////////////
 TestRun();
@@ -86,6 +74,6 @@ async function TestRun(){
         ]
     }];
 
-    let res = await StoreResults(resultObj);
+    let res = await StoreResultsContracts(resultObj);
     console.log(JSON.stringify(res, null, 4)); 
 }

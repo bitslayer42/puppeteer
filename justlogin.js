@@ -7,7 +7,7 @@ async function LogIn(){  //(called at bottom of file to start program)
         headless: false
     });
     const page = await browser.newPage();
-    await page.setViewport({width:1000,height:1000});
+    await page.setViewport({width:1500,height:1000});
     let carData = [];
 
     // Log In
