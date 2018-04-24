@@ -40,13 +40,13 @@ async function LogIn(){
     const PASSWORD_SELECTOR = '#FormsEditField2';
     const BUTTON_SELECTOR = '#userFields > ul > li:nth-child(3) > input';
     await page.goto('http://dealerconnect.com');
-    await page.waitForNavigation({timeout:30001});   //after redirect
+    await page.waitForNavigation({timeout:10001});   //after redirect
     await page.click(USERNAME_SELECTOR);
     await page.keyboard.type(CREDS.webusername);
     await page.click(PASSWORD_SELECTOR);
     await page.keyboard.type(CREDS.webpassword);
     await page.click(BUTTON_SELECTOR);
-    await page.waitForNavigation({timeout:30002});
+    await page.waitForNavigation({timeout:10002});
 
     // get email
     await page.goto('https://w02.dealerconnect.chrysler.com/sales/timeofsale/COIN/CustomerInformation.jsp?command=customerOwnerInformationInquiry&operation=openCustomerOwnerInformationInquiry&routeFrom=Portlet');
@@ -70,7 +70,7 @@ async function getEmail(page,Vin) {
     const VIN_SELECTOR = '#VINLastEight';
     const VIN_BUTTON_SELECTOR = '#searchBody > a';
     const ERROR_MSG_SELECTOR = '#searchCriteria > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td';
-    await page.waitForSelector(VIN_SELECTOR,{timeout:30012});
+    await page.waitForSelector(VIN_SELECTOR,{timeout:3012});
     await page.click(VIN_SELECTOR);
 
     //clear Vin field
@@ -145,11 +145,11 @@ async function getEmail(page,Vin) {
 
         let RadioSelector = DATE_RADIO_SELECTOR.replace("INDEX", i);
         await page.click(RadioSelector);
-        await page.waitForSelector(ACTIVE_ADDRESS_TAB_SELECTOR,{timeout:30025}); //go to address page
+        await page.waitForSelector(ACTIVE_ADDRESS_TAB_SELECTOR,{timeout:3025}); //go to address page
         await page.click(ACTIVE_ADDRESS_TAB_SELECTOR);    
         
-        await page.waitForSelector(OPT_IN_FLAG,{timeout:30005}); 
-        //await page.waitForNavigation({timeout:30001});
+        await page.waitForSelector(OPT_IN_FLAG,{timeout:3005}); 
+        //await page.waitForNavigation({timeout:3001});
         // await page.waitFor(1000); ////////////////////////////////////////////////////////////////////
 
         let emailAddr = await page.evaluate(() => {
@@ -172,15 +172,15 @@ async function getEmail(page,Vin) {
         //console.log('Title:',Title);
         tableRow['Title'] = Title;
 
-        await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:30003}); //go back to list
+        await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:3003}); //go back to list
         await page.click(BACK_TO_LIST_TAB_SELECTOR);    
         await page.waitForSelector(TABLE_ROW,{timeout:40035});
 
         anEmailData.Rows.push(tableRow);
     }
-    await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:30007}); //go back to select vin
+    await page.waitForSelector(BACK_TO_CRITERIA_TAB_SELECTOR,{timeout:3007}); //go back to select vin
     await page.click(BACK_TO_CRITERIA_TAB_SELECTOR);    
-    await page.waitForSelector(VIN_BUTTON_SELECTOR,{timeout:30045});
+    await page.waitForSelector(VIN_BUTTON_SELECTOR,{timeout:3045});
     //console.log("anEmailData",JSON.stringify(anEmailData, null, 4));
     return anEmailData;
 }

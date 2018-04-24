@@ -14,9 +14,8 @@ async function StoreResultsEmails(resultObj,Delete) {
         let pool = await sql.connect(config);
 
         if(Delete){
-            await pool.request().query("DELETE DealerConnect;");
+            await pool.request().query("DELETE DealerConnectDemog;");
         }else{
-
             for(let i = 0;i<resultObj.length;i++){
                 for(let j = 0;j<resultObj[i].Rows.length;j++){
                     let vin = resultObj[i].Vin;
@@ -35,7 +34,7 @@ async function StoreResultsEmails(resultObj,Delete) {
                     .input("Phone", sql.VarChar(200), row.Phone)
                     .input("EmailAddr", sql.VarChar(200), row.EmailAddr)
                     .input("Title", sql.VarChar(200), row.Title)          
-                    .execute('UploadDealerConnect');  
+                    .execute('UploadDealerConnectDemog');  
                 }
             }
         }
