@@ -1,25 +1,13 @@
-const puppeteer = require('puppeteer');
 const CREDS = require('./creds');
 const GetVinsContracts = require('./GetVinsContracts');
 const StoreResultsContracts = require('./StoreResultsContracts'); //has contract info
 
-let contractData = [];   //array of aCarData = {"Vin":Vin, "NoContract":null, "Message":null}; 
-let browser;
-
-async function Run(){  //(called at bottom of file to start program)
-    await StoreResultsContracts(null, true); //delete
-    await LogIn();
-}
-
-async function LogIn(){  //(called at bottom of file to start program)
+async function LogInContracts(contractData,browser){  //(called at bottom of file to start program)
     const VinObj = await GetVinsContracts();
 
     const Vins = VinObj.recordset.map(obj=>obj.VIN);
     if(Vins.length===0){return};
     
-    browser = await puppeteer.launch({
-        headless: false
-    });
     const page = await browser.newPage();
     await page.setViewport({width:1000,height:1000});
 
@@ -60,9 +48,14 @@ async function checkIfNoContract(page,Vin,ix) {
     await page.waitForSelector(VIN_SELECTOR,{timeout:30003});
     await page.click(VIN_SELECTOR);  
     await page.keyboard.type(Vin);
-    await page.click(SUBMIT_BUTTON_SELECTOR);    
+    await page.click(SUBMIT_BUTTON_SELECTOR);  
+    await page.waitForFunction((sel) => { 
+        return document.querySelectorAll(sel).length;
+    },{timeout:10000},CONTRACT_RADIO_SELECTOR+", "+ERROR_MSG_SELECTOR); //#admRadio, #msg > span:nth-child(3)")
+        // One of these should appear, we don't know which
+        // Now see which one appeared:
     try {
-        await page.waitForSelector(CONTRACT_RADIO_SELECTOR,{timeout:1000}); 
+        await page.waitForSelector(CONTRACT_RADIO_SELECTOR,{timeout:10}); //1000 
     }
     catch(err) {
         //check for "not found" 
@@ -81,6 +74,7 @@ async function checkIfNoContract(page,Vin,ix) {
         }
         return aCarData;
     };
+
    //document.querySelector('body > form > table:nth-child(7) > tbody > tr > td > table > tbody > tr:nth-child(3) > td:nth-child(3) > a')
     //Contract List Table appears:
     //await page.waitForSelector(CONTRACT_RADIO_SELECTOR,{timeout:1000});
@@ -112,25 +106,4 @@ async function checkIfNoContract(page,Vin,ix) {
 
 }
 
-//////////PROGRAM STARTS HERE//////////////////
-Run();
-//////////PROGRAM STARTS HERE//////////////////
-
-//if any awaits time out, program ends
-process.on('unhandledRejection', async (err) => { 
-    console.error(err);
-    await StoreResultsContracts(contractData,false);
-    contractData = []; 
-    await browser.close();
-    await LogIn();
-  })
-
-// let filepath = 'screenshots/dc' + i + '.png';
-// await page.screenshot({ path: filepath });
-
-// Syntax for async error handling
-// try {
-//     await myFunc(param);  
-// } catch(e) {
-//     return cb('Error msg');
-// }
+module.exports = LogInContracts;
