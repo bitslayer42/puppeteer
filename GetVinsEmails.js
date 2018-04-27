@@ -29,9 +29,4 @@ sql.on('error', err => {
 })
 
 module.exports = GetVinsEmails;
-/////////////////////////////////////////////////////
-TestRun();
-async function TestRun(){
-    let res = await GetVinsEmails();
-    console.log(JSON.stringify(res, null, 4)); 
-}
+

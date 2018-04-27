@@ -174,7 +174,7 @@ async function getEmail(page,Vin) {
 
         await page.waitForSelector(BACK_TO_LIST_TAB_SELECTOR,{timeout:3003}); //go back to list
         await page.click(BACK_TO_LIST_TAB_SELECTOR);    
-        await page.waitForSelector(TABLE_ROW,{timeout:40035});
+        await page.waitForSelector(TABLE_ROW,{timeout:3035});
 
         anEmailData.Rows.push(tableRow);
     }
@@ -189,21 +189,12 @@ async function getEmail(page,Vin) {
 Run();
 //////////PROGRAM STARTS HERE//////////////////
 
-//if any awaits time out, program ends
-process.on('unhandledRejection', async (err) => { 
+//if any awaits time out, program restarts
+async function errEmails (err) {
     console.error(err);
     await StoreResultsEmails(emailData,false);
     emailData = []; 
     await browser.close();
     await LogIn();
-  })
-
-// let filepath = 'screenshots/dc' + i + '.png';
-// await page.screenshot({ path: filepath });
-
-// Syntax for async error handling
-// try {
-//     await myFunc(param);  
-// } catch(e) {
-//     return cb('Error msg');
-// }
+}
+process.on('unhandledRejection', errEmails);

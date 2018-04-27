@@ -1,1 +1,0 @@
-const ERROR_SELECTOR = 'body > table > tbody > tr:nth-child(2) > td';

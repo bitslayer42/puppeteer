@@ -12,7 +12,7 @@ async function Run(){  //(called below to start program)
     await process.on('unhandledRejection', errContracts);
 
     browser = await puppeteer.launch({
-        headless: false
+        headless: true
     });
 
     await StoreResultsContracts(null, true); //delete contracts
@@ -35,7 +35,7 @@ async function errContracts (err) {
     contractData = []; 
     await browser.close();
     browser = await puppeteer.launch({
-        headless: false
+        headless: true
     });
     await LogInContracts(contractData,browser);
 }
@@ -45,7 +45,7 @@ async function errEmails (err) {
     emailData = []; 
     await browser.close();
     browser = await puppeteer.launch({
-        headless: false
+        headless: true
     });
     await LogInEmails(emailData,browser);
 }
