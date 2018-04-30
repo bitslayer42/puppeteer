@@ -2,9 +2,10 @@ const CREDS = require('./creds');
 const GetVinsContracts = require('./GetVinsContracts');
 const StoreResultsContracts = require('./StoreResultsContracts'); //has contract info
 
+
 async function LogInContracts(contractData,browser){  //(called at bottom of file to start program)
     const VinObj = await GetVinsContracts();
-
+    if(VinObj.length===0){return};
     const Vins = VinObj.recordset.map(obj=>obj.VIN);
     if(Vins.length===0){return};
     

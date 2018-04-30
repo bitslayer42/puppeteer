@@ -16,8 +16,8 @@ const colNames = {
 
 async function LogInEmails(emailData,browser){ 
     const VinObj = await GetVinsEmails();
+    if(VinObj.length===0){return};
     const Vins = VinObj.recordset.map(obj=>obj.VIN);
-    // console.log(JSON.stringify(Vins, null, 4)); 
     if(Vins.length===0){return};
 
     const page = await browser.newPage();

@@ -1,51 +1,47 @@
 const puppeteer = require('puppeteer');
 const LogInContracts = require('./LogInContracts'); //has contract info
-const LogInEmails = require('./LogInEmails');    //emails
 const StoreResultsContracts = require('./StoreResultsContracts'); //has contract info
+const LogInEmails = require('./LogInEmails');    //emails
 const StoreResultsEmails = require('./StoreResultsEmails');    //emails
 
 let contractData = [];   //array of aCarData = {"Vin":Vin, "NoContract":null, "Message":null}; 
 let emailData = []; //array of anEmailData = {"Vin":Vin,"Rows":[]};
 let browser;
 
-async function Run(){  //(called below to start program)
-    await process.on('unhandledRejection', errContracts);
-
-    browser = await puppeteer.launch({
-        headless: false
-    });
-
+//(called below to start program)
+async function Run(){  
+    await process.on('unhandledRejection', errHandler);
     await StoreResultsContracts(null, true); //delete contracts
-    await LogInContracts(contractData,browser);
-
-    await process.removeListener('unhandledRejection', errContracts);
-    await process.on('unhandledRejection', errEmails);
-    
     await StoreResultsEmails(null, true); //delete emails
-    await LogInEmails(emailData,browser);
+    
+    await RunAll();
 
+}
+async function RunAll(){ //Can rerun every time website craps out.    
+    browser = await puppeteer.launch({
+        headless: true
+    });
+    await LogInContracts(contractData,browser);
+    browser = await puppeteer.launch({
+        headless: true
+    });
+    await LogInEmails(emailData,browser);
 }
 
 Run();
 
 //if any awaits time out, program restarts
-async function errContracts (err) {
+async function errHandler (err) {
     console.error(err);
-    await StoreResultsContracts(contractData,false);
-    contractData = []; 
+    if(contractData.length>0){
+        await StoreResultsContracts(contractData,false);
+        contractData = []; 
+    }
+    if(emailData.length>0){
+        await StoreResultsEmails(emailData,false);
+        emailData = []; 
+    }
     await browser.close();
-    browser = await puppeteer.launch({
-        headless: false
-    });
-    await LogInContracts(contractData,browser);
+    await RunAll();
 }
-async function errEmails (err) {
-    console.error(err);
-    await StoreResultsEmails(emailData,false);
-    emailData = []; 
-    await browser.close();
-    browser = await puppeteer.launch({
-        headless: false
-    });
-    await LogInEmails(emailData,browser);
-}
+

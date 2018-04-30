@@ -16,6 +16,7 @@ async function StoreResultsContracts(resultObj,Delete) {
         if(Delete){
             await pool.request().query("DELETE DealerConnectContracts;")
         }else{
+            console.log("Uploading Contracts:" + resultObj.length);
             for(let i = 0;i<resultObj.length;i++){
                     await pool.request()
                     .input('Vin', sql.VarChar(17), resultObj[i].Vin)
@@ -23,6 +24,7 @@ async function StoreResultsContracts(resultObj,Delete) {
                     .input("Message", sql.VarChar(200), resultObj[i].Message)          
                     .execute('UploadDealerConnectContracts');  
             }
+            console.log("Contracts Uploaded ");
         }
 
         sql.close();

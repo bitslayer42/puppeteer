@@ -16,6 +16,7 @@ async function StoreResultsEmails(resultObj,Delete) {
         if(Delete){
             await pool.request().query("DELETE DealerConnectDemog;");
         }else{
+            console.log("Uploading Emails:" + resultObj.length);
             for(let i = 0;i<resultObj.length;i++){
                 for(let j = 0;j<resultObj[i].Rows.length;j++){
                     let vin = resultObj[i].Vin;
@@ -37,6 +38,7 @@ async function StoreResultsEmails(resultObj,Delete) {
                     .execute('UploadDealerConnectDemog');  
                 }
             }
+            console.log("Emails Uploaded ");
         }
         sql.close();
         pool.close();
