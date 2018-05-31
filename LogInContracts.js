@@ -5,10 +5,15 @@ const StoreResultsContracts = require('./StoreResultsContracts'); //has contract
 
 async function LogInContracts(contractData,browser){  //(called at bottom of file to start program)
     const VinObj = await GetVinsContracts();
-    if(VinObj.length===0){return};
+    if(VinObj.length===0){
+        await browser.close();
+        return;
+    };
     const Vins = VinObj.recordset.map(obj=>obj.VIN);
-    if(Vins.length===0){return};
-    
+    if(Vins.length===0){
+        await browser.close();
+        return;
+    };
     const page = await browser.newPage();
     await page.setViewport({width:1000,height:1000});
 
@@ -31,7 +36,8 @@ async function LogInContracts(contractData,browser){  //(called at bottom of fil
         //await checkIfNoContract(page,Vins[ix],ix);
     };
     await StoreResultsContracts(contractData,false); // data if has contract
-
+    contractData = [];
+    
     browser.close();
 }
 

@@ -11,7 +11,7 @@ const config = {
 
 async function GetVinsContracts() { 
     sql.close();
-    request = "select VIN from DealerConnect_VinList where Vin NOT IN (select Vin from DealerConnectContracts)  order by vin ;"  
+    request = "select VIN from DealerConnect_VinList WHERE Vin NOT IN (select Vin from DealerConnectContracts) AND (IsNumeric(RIGHT(Vin,1)) = 1) order by vin ;"  
     try {
         let pool = await sql.connect(config)
         let result1 = await pool.request()

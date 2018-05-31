@@ -1,0 +1,13 @@
+
+How to run DealerConnect
+
+These files are in C:\Users\jon.wilson\Documents\dealerconnect
+
+0) Import flat file with Vins to new table dealcon.
+1) Run ImportVinList.sql (loads table DealerConnect_VinList)
+2) Run program: "index.bat" to pull emails from dealerconnect.com (Loads tables DealerConnectContracts and DealerConnectDemog)
+3) Run DealerConnectCleanData.sql (Loads table DealerConnectEmailList)
+4) Load unsubscribed emails to table DealerConnectUnsubscribed
+5) Run FillUnsubAndSold.sql and DeletingDuplicateEmails.sql
+6) Download file to csv for MailChimp
+7) Run LoadToHistory.sql, which should leave 3 main tables empty for next time.
